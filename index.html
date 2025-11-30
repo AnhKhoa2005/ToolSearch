@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tool Tìm Kiếm Trắc Nghiệm Pro</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text: #1f2937;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Navigation */
+        .nav-header {
+            display: flex;
+            border-bottom: 1px solid #e5e7eb;
+            background: #fff;
+        }
+
+        .nav-btn {
+            flex: 1;
+            padding: 20px;
+            border: none;
+            background: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #6b7280;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .nav-btn:hover { background-color: #f9fafb; color: var(--primary); }
+        
+        .nav-btn.active {
+            color: var(--primary);
+            border-bottom: 3px solid var(--primary);
+            background-color: #eff6ff;
+        }
+
+        /* Views */
+        .view-section {
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .view-section.active {
+            display: flex;
+        }
+
+        /* Inputs & Buttons */
+        textarea {
+            width: 100%;
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: none;
+            margin-bottom: 15px;
+        }
+
+        textarea:focus { outline: none; border-color: var(--primary); }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #4338ca; }
+        
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #b91c1c; }
+
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-warning:hover { background: #d97706; }
+        
+        .btn-dark { background: #374151; color: white; }
+        .btn-dark:hover { background: #1f2937; }
+
+        /* Search Styles */
+        .search-box {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        .results-list {
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 5px;
+        }
+
+        .result-item {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .correct-answer-box {
+            background-color: #f0fdf4;
+            border: 2px solid var(--success);
+            color: #15803d;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .correct-answer-box::before {
+            content: "ĐÁP ÁN ĐÚNG:";
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--success);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .question-text {
+            color: #374151;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .highlight {
+            background-color: #fde047;
+            font-weight: bold;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #9ca3af;
+            margin-top: 50px;
+        }
+
+        .stats-badge {
+            display: inline-block;
+            background: #e0e7ff;
+            color: var(--primary);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        /* Server Status Indicator */
+        .server-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: #fee2e2;
+            color: #991b1b;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .server-status.online {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90%;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6b7280;
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="nav-header">
+        <button class="nav-btn" onclick="switchTab('import')" id="btn-import">
+            📂 Nhập Dữ Liệu
+        </button>
+        <button class="nav-btn active" onclick="switchTab('search')" id="btn-search">
+            🔍 Tìm Kiếm
+        </button>
+    </div>
+
+    <!-- MÀN HÌNH 1: NHẬP DỮ LIỆU -->
+    <div id="view-import" class="view-section">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display:flex; align-items:center;">
+                <h2>Kho Dữ Liệu</h2>
+                <button class="server-status" id="status-badge" onclick="openConfigModal()">⚙️ Kết nối Server (Offline)</button>
+            </div>
+            <span class="stats-badge" id="db-count">Đang có: 0 câu</span>
+        </div>
+        
+        <p style="color: #666; font-size: 13px; margin-top: 0;">Copy & Paste dữ liệu vào ô dưới. Định dạng:</p>
+        <div style="background: #eee; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; margin-bottom: 10px; color: #444;">
+            Câu hỏi...<br>
+            + Đáp án đúng<br>
+            - Đáp án sai
+        </div>
+        
+        <textarea id="input-data" placeholder="Ví dụ:
+Câu 1: Thủ đô VN?
++ Hà Nội
+- Huế
+- Đà Nẵng"></textarea>
+
+        <div class="btn-group">
+            <button class="btn btn-warning" onclick="showAllData()">👁️ Xem Kho</button>
+            <button class="btn btn-danger" onclick="clearDatabase()">🗑️ Xoá Sạch</button>
+            <button class="btn btn-primary" onclick="addToDatabase()" id="btn-add">📥 Add vào Kho</button>
+        </div>
+    </div>
+
+    <!-- MÀN HÌNH 2: TÌM KIẾM -->
+    <div id="view-search" class="view-section active">
+        <input type="text" class="search-box" id="search-input" placeholder="Gõ từ khoá để tìm kiếm câu hỏi..." oninput="handleSearch()">
+        
+        <div id="results-container" class="results-list">
+            <div class="empty-state">
+                <div id="loading-indicator" style="display:none;"><div class="loading-spinner"></div> Đang tải dữ liệu...</div>
+                <div id="search-hint">👆 Nhập từ khoá để tìm kiếm</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL XEM DỮ LIỆU -->
+    <div id="data-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="margin: 0;">Danh Sách Dữ Liệu Trong Kho</h3>
+                <button class="close-btn" onclick="closeModal('data-modal')">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-list">
+                <!-- Data will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CẤU HÌNH SERVER -->
+    <div id="config-modal" class="modal-overlay">
+        <div class="modal-content" style="height: auto;">
+            <div class="modal-header">
+                <h3 style="margin: 0;">Cấu Hình Kết Nối Firebase</h3>
+                <button class="close-btn" onclick="closeModal('config-modal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 13px; color: #555;">Dán toàn bộ đoạn mã <code>const firebaseConfig = { ... }</code> bạn copy từ Firebase Console vào đây:</p>
+                <textarea id="config-input" style="height: 150px; font-size: 12px;" placeholder='const firebaseConfig = {
+  apiKey: "AIza...",
+  authDomain: "...",
+  ...
+};'></textarea>
+                <div style="text-align: right; margin-top: 10px;">
+                    <button class="btn btn-dark" onclick="removeConfig()" style="margin-right: 10px;">Ngắt kết nối</button>
+                    <button class="btn btn-success" onclick="saveConfig()">Lưu & Kết nối</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // Biến toàn cục
+    let db;
+    let quizCollection;
+    let isFirebaseReady = false;
+    let localDatabase = [];
+
+    // --- QUẢN LÝ CẤU HÌNH ---
+    window.openConfigModal = function() {
+        document.getElementById('config-modal').classList.add('open');
+        const savedConfig = localStorage.getItem('user_firebase_config_str');
+        if(savedConfig) {
+            document.getElementById('config-input').value = savedConfig;
+        }
+    }
+
+    window.saveConfig = function() {
+        const input = document.getElementById('config-input').value.trim();
+        if(!input) return;
+
+        // Parse thủ công để lấy các giá trị
+        try {
+            const configObj = {};
+            const keys = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+            
+            let found = false;
+            keys.forEach(key => {
+                const regex = new RegExp(`${key}:\\s*["']([^"']+)["']`);
+                const match = input.match(regex);
+                if(match && match[1]) {
+                    configObj[key] = match[1];
+                    found = true;
+                }
+            });
+
+            if(!found) {
+                // Thử parse dạng JSON thuần nếu user paste JSON
+                try {
+                    const json = JSON.parse(input);
+                    Object.assign(configObj, json);
+                } catch(e) {
+                    alert("Không nhận diện được mã cấu hình. Hãy đảm bảo bạn copy đúng đoạn mã từ Firebase!");
+                    return;
+                }
+            }
+
+            localStorage.setItem('user_firebase_config', JSON.stringify(configObj));
+            localStorage.setItem('user_firebase_config_str', input); // Lưu string gốc để hiện lại cho user
+            alert("Đã lưu cấu hình! Trang sẽ tải lại để kết nối.");
+            location.reload();
+
+        } catch(e) {
+            console.error(e);
+            alert("Lỗi khi đọc cấu hình.");
+        }
+    }
+
+    window.removeConfig = function() {
+        if(confirm("Bạn muốn ngắt kết nối Server và quay về dùng bộ nhớ máy?")) {
+            localStorage.removeItem('user_firebase_config');
+            localStorage.removeItem('user_firebase_config_str');
+            location.reload();
+        }
+    }
+
+    // --- KHỞI TẠO APP ---
+    async function initApp() {
+        const configStr = localStorage.getItem('user_firebase_config');
+        
+        if (!configStr) {
+            console.warn("Chưa có config Firebase. Chạy Offline.");
+            document.getElementById('status-badge').innerText = "⚙️ Offline (Bấm để kết nối)";
+            document.getElementById('status-badge').className = "server-status";
+            // Load Local Data
+            localDatabase = JSON.parse(localStorage.getItem('quiz_db')) || [];
+            updateCount();
+            return;
+        }
+
+        try {
+            const firebaseConfig = JSON.parse(configStr);
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            quizCollection = collection(db, "questions");
+            isFirebaseReady = true;
+            
+            const badge = document.getElementById('status-badge');
+            badge.innerText = "🟢 Online (Đã kết nối Server)";
+            badge.classList.add('online');
+            
+            await refreshLocalData();
+        } catch (error) {
+            console.error("Lỗi kết nối Firebase:", error);
+            alert("Lỗi kết nối Server! Vui lòng kiểm tra lại cấu hình.");
+            localStorage.removeItem('user_firebase_config'); // Reset nếu lỗi
+            location.reload();
+        }
+    }
+
+    // Tải dữ liệu từ Server
+    async function refreshLocalData() {
+        if (!isFirebaseReady) return;
+        
+        document.getElementById('loading-indicator').style.display = 'block';
+        document.getElementById('search-hint').style.display = 'none';
+        
+        try {
+            const querySnapshot = await getDocs(quizCollection);
+            localDatabase = [];
+            querySnapshot.forEach((doc) => {
+                localDatabase.push({ id: doc.id, ...doc.data() });
+            });
+            updateCount();
+        } catch (e) {
+            console.error(e);
+            // Nếu lỗi permission (thường do chưa bật Test Mode)
+            if(e.code === 'permission-denied') {
+                alert("Lỗi Quyền Truy Cập! Hãy chắc chắn bạn đã chọn 'Start in Test Mode' khi tạo Database trên Firebase.");
+            }
+        } finally {
+            document.getElementById('loading-indicator').style.display = 'none';
+            document.getElementById('search-hint').style.display = 'block';
+        }
+    }
+
+    // --- CÁC HÀM XỬ LÝ DỮ LIỆU ---
+
+    window.addToDatabase = async function() {
+        const text = document.getElementById('input-data').value;
+        if (!text.trim()) { alert("Chưa nhập dữ liệu!"); return; }
+
+        const btn = document.getElementById('btn-add');
+        const originalText = btn.innerText;
+        btn.innerText = "Đang lưu...";
+        btn.disabled = true;
+
+        const lines = text.split('\n').filter(l => l.trim());
+        let currentQ = null;
+        let newItems = [];
+
+        lines.forEach(line => {
+            line = line.trim();
+            if (line.startsWith('+') || line.startsWith('-')) {
+                if (currentQ && line.startsWith('+')) {
+                    currentQ.correctAnswer = line.substring(1).trim();
+                }
+            } else {
+                if (currentQ && currentQ.correctAnswer) {
+                    newItems.push(currentQ);
+                }
+                currentQ = {
+                    question: line,
+                    correctAnswer: null,
+                    createdAt: Date.now()
+                };
+            }
+        });
+        if (currentQ && currentQ.correctAnswer) newItems.push(currentQ);
+
+        if (newItems.length === 0) {
+            alert("Không tìm thấy câu hỏi hợp lệ! Hãy kiểm tra định dạng (+/-).");
+            btn.innerText = originalText;
+            btn.disabled = false;
+            return;
+        }
+
+        // Lưu dữ liệu
+        if (isFirebaseReady) {
+            const batch = writeBatch(db);
+            let count = 0;
+            for (const item of newItems) {
+                const newRef = doc(quizCollection);
+                batch.set(newRef, item);
+                count++;
+                if(count >= 450) break; // Giới hạn batch của Firestore
+            }
+            await batch.commit();
+            await refreshLocalData();
+        } else {
+            localDatabase = [...localDatabase, ...newItems];
+            localStorage.setItem('quiz_db', JSON.stringify(localDatabase));
+            updateCount();
+        }
+
+        document.getElementById('input-data').value = '';
+        btn.innerText = originalText;
+        btn.disabled = false;
+        alert(`Đã thêm thành công ${newItems.length} câu hỏi!`);
+    }
+
+    window.clearDatabase = async function() {
+        if(!confirm('CẢNH BÁO: Hành động này sẽ XOÁ SẠCH dữ liệu?')) return;
+
+        if (isFirebaseReady) {
+            const btn = document.querySelector('.btn-danger');
+            btn.innerText = "Đang xoá...";
+            
+            const querySnapshot = await getDocs(quizCollection);
+            const batch = writeBatch(db);
+            querySnapshot.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
+            await batch.commit();
+            await refreshLocalData();
+            
+            btn.innerText = "🗑️ Xoá Sạch";
+        } else {
+            localDatabase = [];
+            localStorage.removeItem('quiz_db');
+            updateCount();
+        }
+        
+        document.getElementById('results-container').innerHTML = '';
+        alert('Đã xoá sạch dữ liệu!');
+    }
+
+    // UI Helpers
+    window.switchTab = function(tabName) {
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(`view-${tabName}`).classList.add('active');
+        document.getElementById(`btn-${tabName}`).classList.add('active');
+        if(tabName === 'search') document.getElementById('search-input').focus();
+    }
+
+    window.updateCount = function() {
+        document.getElementById('db-count').innerText = `Đang có: ${localDatabase.length} câu`;
+    }
+
+    window.showAllData = function() {
+        const modal = document.getElementById('data-modal');
+        const list = document.getElementById('modal-list');
+        
+        if (localDatabase.length === 0) {
+            alert("Kho dữ liệu đang trống!");
+            return;
+        }
+
+        let html = '';
+        localDatabase.forEach((item, index) => {
+            html += `
+                <div class="result-item" style="border-left: 4px solid var(--primary);">
+                    <div style="font-weight: bold; margin-bottom: 5px; color: #666;">Câu ${index + 1}:</div>
+                    <div class="question-text" style="margin-bottom: 10px;">${item.question}</div>
+                    <div class="correct-answer-box" style="margin-bottom: 0;">${item.correctAnswer}</div>
+                </div>
+            `;
+        });
+
+        list.innerHTML = html;
+        modal.classList.add('open');
+    }
+
+    window.closeModal = function(id) {
+        document.getElementById(id).classList.remove('open');
+    }
+
+    window.handleSearch = function() {
+        const query = document.getElementById('search-input').value.toLowerCase().trim();
+        const container = document.getElementById('results-container');
+        
+        if (query.length === 0) {
+            container.innerHTML = '<div class="empty-state">👆 Nhập từ khoá để tìm kiếm</div>';
+            return;
+        }
+
+        const results = localDatabase.filter(item => 
+            item.question.toLowerCase().includes(query) || 
+            item.correctAnswer.toLowerCase().includes(query)
+        );
+
+        if (results.length === 0) {
+            container.innerHTML = '<div class="empty-state">Không tìm thấy kết quả nào 😓</div>';
+            return;
+        }
+
+        let html = '';
+        results.forEach(item => {
+            const highlightedQ = highlightText(item.question, query);
+            const highlightedA = highlightText(item.correctAnswer, query);
+            
+            html += `
+                <div class="result-item">
+                    <div class="correct-answer-box">
+                        ${highlightedA}
+                    </div>
+                    <div class="question-text">
+                        ${highlightedQ}
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
+    window.highlightText = function(text, query) {
+        if (!text) return "";
+        try {
+            const regex = new RegExp(`(${query})`, 'gi');
+            return text.replace(regex, '<span class="highlight">$1</span>');
+        } catch (e) {
+            return text;
+        }
+    }
+
+    // Chạy app
+    initApp();
+</script>
+
+</body>
+</html>
